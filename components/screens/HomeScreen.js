@@ -70,8 +70,10 @@ export default class HomeScreen extends Component {
                     renderItem={({ item }) => (
                         <ListItem
                             roundAvatar
+                            button
+                            onPress={() => this._navigateToRoom(item)}
                             title={item.name}
-                            // subtitle={item.players.length.toString()}
+                            subtitle={item.players.length.toString() + '/6 joueurs'}
                             leftIcon={{name: item.status === 'ACTIVE' ? 'lock-open' : 'lock'}}
                             chevron={true}
                         />
@@ -85,18 +87,19 @@ export default class HomeScreen extends Component {
     _searchRooms = (s) => {
         let search = s.toUpperCase();
         console.log(search);
-        let results = this.state.rooms.filter(r => search.includes(r.name.toUpperCase()));
+        let results = this.state.rooms.filter(r => r.name.toUpperCase().includes(search));
         console.log(results.length);
         this.setState({
-            filteredRooms: results
+            filteredRooms: results,
+            search: s
         });
 
     };
 
 
-    _navigateToRoom = (id) => {
-        console.log('Navigating to room ID #' + id);
-        this.props.navigation.navigate('Room', {id});
+    _navigateToRoom = (room) => {
+        console.log('Navigating to room ID #' + room.id);
+        this.props.navigation.navigate('Room', {id: room.id});
     };
 
     _signOutAsync = async () => {
