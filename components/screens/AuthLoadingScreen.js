@@ -1,6 +1,6 @@
 import React from 'react';
 import {ActivityIndicator, AsyncStorage, StatusBar, StyleSheet, View} from "react-native";
-import SailsIO from "../../singletons/SailsIO";
+import Sails from "../../singletons/SailsIO";
 
 const styles = StyleSheet.create({
     container: {
@@ -14,7 +14,7 @@ const styles = StyleSheet.create({
 export default class AuthLoadingScreen extends React.Component {
 
     componentDidMount = async () => {
-        SailsIO.init();
+        Sails.init();
         await this.loadApp()
     };
     loadApp = async () => {

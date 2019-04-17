@@ -1,9 +1,19 @@
 import React, {Component} from 'react';
 import {FlatList, StyleSheet, ActivityIndicator, View} from 'react-native';
-import {ListItem, SearchBar} from "react-native-elements";
+import {Button, Icon, Input, ListItem, Overlay, SearchBar, Text} from "react-native-elements";
 import * as Animatable from 'react-native-animatable';
-import SailsIO from "../../singletons/SailsIO";
+import Sails from "../../singletons/SailsIO";
+import ActionButton from 'react-native-action-button';
+
 import AnimatedSvg from "../AnimatedSvg";
+
+const styles = StyleSheet.create({
+    modal: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+});
 
 export default class HomeScreen extends Component {
 
@@ -13,7 +23,12 @@ export default class HomeScreen extends Component {
             rooms: [],
             search: '',
             filteredRooms: [],
-            loading: true};
+            loading: true,
+            refreshing: false,
+            overlayIsVisible: false,
+            creationRoomLoading: false,
+            newRoomName: ''
+        };
         this._fetchRooms();
     }
 
@@ -26,7 +41,7 @@ export default class HomeScreen extends Component {
             placeholder="Recherche d'une salle..."
             value={this.state.search}
             onChangeText={this._searchRooms}
-            lightTheme />;
+            lightTheme/>;
     };
 
     renderFooter = () => {
@@ -41,8 +56,9 @@ export default class HomeScreen extends Component {
                     borderColor: "#CED0CE"
                 }}
             >
-                <Animatable.Text animation="slideInDown" duration={200} direction="alternate">Chargement des salles...</Animatable.Text>
-                <ActivityIndicator animating size="large" />
+                <Animatable.Text animation="slideInDown" duration={200} direction="alternate">Chargement des
+                    salles...</Animatable.Text>
+                <ActivityIndicator animating size="large"/>
             </View>
         );
     };
@@ -60,38 +76,73 @@ export default class HomeScreen extends Component {
     };
 
     render() {
+
         return (
+            <View>
                 <FlatList
                     data={this.state.filteredRooms}
                     keyExtractor={item => item.id.toString()}
                     ItemSeparatorComponent={this.renderSeparator}
                     ListHeaderComponent={this.renderHeader}
                     ListFooterComponent={this.renderFooter}
-                    renderItem={({ item }) => (
+                    refreshing={this.state.refreshing}
+                    onRefresh={this._handleRefresh}
+                    renderItem={({item}) => (
                         <ListItem
                             roundAvatar
                             button
                             onPress={() => this._navigateToRoom(item)}
-                            title={item.name}
-                            subtitle={item.players.length.toString() + '/6 joueurs'}
+                            title={item.name + ' (#' + item.id + ')'}
+                            subtitle={item.players.length.toString() + '/6 joueurs  -  ' + 'Tour ' + item.turnCount.toString()}
                             leftIcon={{name: item.status === 'ACTIVE' ? 'lock-open' : 'lock'}}
                             chevron={true}
                         />
                     )}
                 />
+                <ActionButton
+                    buttonColor="#FDC007"
+                    onPress={() => {this._openRoomCreationModal()}}
+                />
+                <Overlay
+                    height={300}
+                    overlayStyle={styles.modal}
+                    isVisible={this.state.overlayIsVisible}
+                    onBackdropPress={() => this.setState({ overlayIsVisible: false })}>
+                    <Input
+                        containerStyle={{paddingBottom: 15}}
+                        placeholder='Nom de la salle'
+                        onChangeText={(newRoomName) => this.setState({newRoomName})}
+                    />
+                    <Button
+                        containerStyle={{width: 100}}
+                        title="Créer la salle"
+                        loading={this.state.creationRoomLoading}
+                        onPress={() => {this._createNewRoom()}}
+                    />
+                </Overlay>
+            </View>
+
         );
     };
 
-    keyExtractor = (item) => item.id;
+    _handleRefresh = () => {
+        this.setState({
+            refreshing: true
+        }, () => {
+            this._fetchRooms();
+        })
+    };
 
-    _searchRooms = (s) => {
-        let search = s.toUpperCase();
-        console.log(search);
-        let results = this.state.rooms.filter(r => r.name.toUpperCase().includes(search));
-        console.log(results.length);
+    _openRoomCreationModal = () => {
+        this.setState({overlayIsVisible: true})
+    };
+
+
+    _searchRooms = (search) => {
+        let results = this.state.rooms.filter(r => r.name.toUpperCase().includes(search.toUpperCase()));
         this.setState({
             filteredRooms: results,
-            search: s
+            search
         });
 
     };
@@ -99,19 +150,38 @@ export default class HomeScreen extends Component {
 
     _navigateToRoom = (room) => {
         console.log('Navigating to room ID #' + room.id);
-        this.props.navigation.navigate('Room', {id: room.id});
+        this.props.navigation.navigate('Room', {roomId: room.id});
     };
 
-    _signOutAsync = async () => {
+    /*_signOutAsync = async () => {
         await AsyncStorage.clear();
         this.props.navigation.navigate('Auth');
-    };
+    };*/
 
     _fetchRooms = async () => {
-        await SailsIO.get('/room', (r) => {
-            console.log(r.length);
-            this.setState({rooms: r, filteredRooms: r, loading: false});
-            return r;
+        await Sails.io.get('/room', (r) => {
+            this.setState({
+                rooms: r,
+                filteredRooms: r.filter(r => r.name.toUpperCase().includes(this.state.search.toUpperCase())),
+                loading: false,
+                refreshing: false
+            });
         });
+    };
+
+    _createNewRoom = () => {
+        this.setState({creationRoomLoading: true});
+        if (this.state.newRoomName.length) {
+            Sails.io.post('/room', {
+                name: this.state.newRoomName
+            }, (r) => {
+                this.setState({
+                    overlayIsVisible: false,
+                    creationRoomLoading: false,
+                    newRoomName: ''
+                });
+                this.props.navigation.navigate('Room', {roomId: r.id});
+            })
+        }
     }
 }

@@ -1,11 +1,8 @@
 const io = require('sails.io.js')( require('socket.io-client') );
 
-export default class SailsIO {
+export default class Sails {
     static init() {
         io.sails.url = 'https://cul-de-chouette-dev.herokuapp.com';
-    }
-
-    static async get(uri, cb) {
-         await io.socket.get(uri, cb);
+        this.io = io.socket;
     }
 }
