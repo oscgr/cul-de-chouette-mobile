@@ -1,5 +1,13 @@
 import React from 'react';
-import {AsyncStorage, Button, View} from "react-native";
+import {AsyncStorage, Button, StyleSheet, View} from "react-native";
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+});
 
 export default class SignInScreen extends React.Component {
     static navigationOptions = {

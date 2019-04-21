@@ -7,13 +7,6 @@ import ActionButton from 'react-native-action-button';
 
 import AnimatedSvg from "../AnimatedSvg";
 
-const styles = StyleSheet.create({
-    modal: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-});
 
 export default class HomeScreen extends Component {
 
@@ -56,8 +49,6 @@ export default class HomeScreen extends Component {
                     borderColor: "#CED0CE"
                 }}
             >
-                <Animatable.Text animation="slideInDown" duration={200} direction="alternate">Chargement des
-                    salles...</Animatable.Text>
                 <ActivityIndicator animating size="large"/>
             </View>
         );
@@ -78,7 +69,7 @@ export default class HomeScreen extends Component {
     render() {
 
         return (
-            <View>
+            <View style={{flex: 1}}>
                 <FlatList
                     data={this.state.filteredRooms}
                     keyExtractor={item => item.id.toString()}
@@ -101,27 +92,30 @@ export default class HomeScreen extends Component {
                 />
                 <ActionButton
                     buttonColor="#FDC007"
-                    onPress={() => {this._openRoomCreationModal()}}
+                    onPress={() => {
+                        this._openRoomCreationModal()
+                    }}
                 />
                 <Overlay
-                    height={300}
-                    overlayStyle={styles.modal}
                     isVisible={this.state.overlayIsVisible}
-                    onBackdropPress={() => this.setState({ overlayIsVisible: false })}>
-                    <Input
-                        containerStyle={{paddingBottom: 15}}
-                        placeholder='Nom de la salle'
-                        onChangeText={(newRoomName) => this.setState({newRoomName})}
-                    />
-                    <Button
-                        containerStyle={{width: 100}}
-                        title="Créer la salle"
-                        loading={this.state.creationRoomLoading}
-                        onPress={() => {this._createNewRoom()}}
-                    />
+                    onBackdropPress={() => this.setState({overlayIsVisible: false})}
+                    height={120}>
+                    <View>
+                        <Input
+                            containerStyle={{paddingBottom: 15}}
+                            placeholder='Nom de la salle'
+                            onChangeText={(newRoomName) => this.setState({newRoomName})}
+                        />
+                        <Button
+                            title="Créer la salle"
+                            loading={this.state.creationRoomLoading}
+                            onPress={() => {
+                                this._createNewRoom()
+                            }}
+                        />
+                    </View>
                 </Overlay>
             </View>
-
         );
     };
 
@@ -158,8 +152,8 @@ export default class HomeScreen extends Component {
         this.props.navigation.navigate('Auth');
     };*/
 
-    _fetchRooms = async () => {
-        await Sails.io.get('/room', (r) => {
+    _fetchRooms = () => {
+        Sails.io.get('/room', (r) => {
             this.setState({
                 rooms: r,
                 filteredRooms: r.filter(r => r.name.toUpperCase().includes(this.state.search.toUpperCase())),
@@ -170,8 +164,8 @@ export default class HomeScreen extends Component {
     };
 
     _createNewRoom = () => {
-        this.setState({creationRoomLoading: true});
         if (this.state.newRoomName.length) {
+            this.setState({creationRoomLoading: true});
             Sails.io.post('/room', {
                 name: this.state.newRoomName
             }, (r) => {

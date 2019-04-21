@@ -1,5 +1,5 @@
 import React from 'react';
-import {ActivityIndicator, AsyncStorage, StatusBar, StyleSheet, View} from "react-native";
+import {ActivityIndicator, AsyncStorage, StyleSheet, View} from "react-native";
 import Sails from "../../singletons/SailsIO";
 
 const styles = StyleSheet.create({
@@ -18,8 +18,14 @@ export default class AuthLoadingScreen extends React.Component {
         await this.loadApp()
     };
     loadApp = async () => {
-        const userToken = await AsyncStorage.getItem('userToken');
-        this.props.navigation.navigate(userToken ? 'App' : 'Auth')
+        const user = await AsyncStorage.getItem('user');
+
+        if (user) {
+            const fetchedUser = Sails.io.get(`user/${user.id}`);
+            console.log(user);
+        }
+
+        this.props.navigation.navigate(user ? 'App' : 'Auth')
     };
 
     // Render any loading content that you like here
