@@ -150,14 +150,14 @@ export default class GameScreen extends React.Component {
                         )}
                     />
                 </View>
-                {!this.state.readOnly && this._isMyTurn() && (
+                {!this.state.readOnly && (
                     <View style={{flex: 2, flexDirection: 'row'}}>
                         <View style={{flex: 1, margin: 5}}>
                             <Button
                                 containerStyle={{flex: 1}}
                                 title="LANCER LES CHOUETTES"
                                 type="clear"
-                                disabled={this.state.me.chouette1 > 0 && this.state.me.chouette2 > 0}
+                                disabled={!this._isMyTurn()}
                                 onPress={() => this._throwChouettes()}/>
                         </View>
                         <View style={{flex: 1, margin: 5}}>
@@ -165,7 +165,7 @@ export default class GameScreen extends React.Component {
                                 containerStyle={{flex: 1}}
                                 title="LANCER LE CUL"
                                 type="clear"
-                                disabled={this.state.me.chouette1 === 0 && this.state.me.chouette2 === 0}
+                                disabled={!this._isMyTurn()}
                                 onPress={() => this._throwCul()}/>
                         </View>
                     </View>
@@ -193,7 +193,13 @@ export default class GameScreen extends React.Component {
 
     _fetchRoom = () => {
         Sails.io.get(`/room/${this.state.roomId}/sub`, (r) => {
-            this.setState({room: r, loading: false, readOnly: r.players > 6});
+            if (r) {
+                this.setState({room: r, loading: false, readOnly: r.players > 6});
+            } else {
+                console.log('room doesnt exist anymore');
+                // Notify
+                this.props.navigation.navigate('Home');
+            }
         });
     };
 
@@ -228,7 +234,8 @@ export default class GameScreen extends React.Component {
         if (this.state.hasChooseUsername) {
             Sails.io.delete(`/room/${this.state.roomId}/player/${this.state.me.id}`, {}, () => {
                 console.log('deleted player ' + this.state.me.id);
-            });        }
+            });
+        }
         this.props.navigation.navigate('Home')
     }
 
@@ -237,26 +244,30 @@ export default class GameScreen extends React.Component {
     }
 
     _throwChouettes() {
-        Sails.io.post(`/room/${this.state.roomId}/player/${this.state.me.id}/action`, {
-            action: 'THROW_CHOUETTES'
-        }, () => {
-            let me = this.state.me;
-            me.chouette1 = 1;
-            me.chouette1 = 1;
-            this.setState({me})
-        });
+        if (this.state.me.chouette1 === 0) {
+            Sails.io.post(`/room/${this.state.roomId}/player/${this.state.me.id}/action`, {
+                action: 'THROW_CHOUETTES'
+            }, (r) => {
+                let me = this.state.me;
+                me.chouette1 = r.chouette1;
+                me.chouette1 = r.chouette2;
+                this.setState({me})
+            });
+        }
     }
 
     _throwCul() {
-        Sails.io.post(`/room/${this.state.roomId}/player/${this.state.me.id}/action`, {
-            action: 'THROW_CUL'
-        }, () => {
-            // Notify
-            let me = this.state.me;
-            me.chouette1 = 0;
-            me.chouette1 = 0;
-            this.setState({me})
-        });
+        if (this.state.me.chouette1 > 0) {
+            Sails.io.post(`/room/${this.state.roomId}/player/${this.state.me.id}/action`, {
+                action: 'THROW_CUL'
+            }, () => {
+                // Notify
+                let me = this.state.me;
+                me.chouette1 = 0;
+                me.chouette1 = 0;
+                this.setState({me})
+            });
 
+        }
     }
 }
