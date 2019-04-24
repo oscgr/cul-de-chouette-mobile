@@ -1,11 +1,8 @@
 import React, {Component} from 'react';
 import {FlatList, StyleSheet, ActivityIndicator, View} from 'react-native';
 import {Button, Icon, Input, ListItem, Overlay, SearchBar, Text} from "react-native-elements";
-import * as Animatable from 'react-native-animatable';
 import Sails from "../../singletons/SailsIO";
 import ActionButton from 'react-native-action-button';
-
-import AnimatedSvg from "../AnimatedSvg";
 
 
 export default class HomeScreen extends Component {
