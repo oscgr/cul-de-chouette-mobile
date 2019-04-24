@@ -3,6 +3,7 @@ import {ActivityIndicator, ScrollView, StyleSheet, FlatList, View, Dimensions} f
 import Sails from "../../singletons/SailsIO";
 import {Input, Overlay, Button, Text} from "react-native-elements";
 import PlayerCard from "../PlayerCard";
+import Toast from 'react-native-easy-toast'
 
 const styles = StyleSheet.create({
     container: {
@@ -64,8 +65,9 @@ export default class GameScreen extends React.Component {
             });
 
             Sails.io.on(`PLAYER_WON`, (r) => {
-                // Notify
-                this.props.navigation.navigate('Home')
+                this.refs.toast.show(`${r.player.username} gagne la partie !`, 500, () => {
+                    this.props.navigation.navigate('Home')
+                });
             });
             Sails.io.on(`PLAYER_ACTION`, (r) => {
                 let players = this.state.room.players.map(player => {
@@ -150,7 +152,13 @@ export default class GameScreen extends React.Component {
                         )}
                     />
                 </View>
-                {!this.state.readOnly && (
+                {this.state.room.players.length <= 1 && (
+                    <View style={{flex: 2}}>
+                        <Text style={{textAlign: 'center'}}>En attente d'un autre joueur...</Text>
+                        <ActivityIndicator style={{paddingTop: 20}} animating size="large"/>
+                    </View>
+                    )}
+                {!this.state.readOnly && this.state.room.players.length > 1 && (
                     <View style={{flex: 2, flexDirection: 'row'}}>
                         <View style={{flex: 1, margin: 5}}>
                             <Button
@@ -187,6 +195,14 @@ export default class GameScreen extends React.Component {
                         />
                     </View>
                 </Overlay>
+                <Toast
+                    ref="toast"
+                    position='bottom'
+                    style={{
+                        backgroundColor:"#FDC007",
+                        padding: 10
+                    }}
+                    positionValue={200}/>
             </View>
         );
     }
@@ -197,8 +213,11 @@ export default class GameScreen extends React.Component {
                 this.setState({room: r, loading: false, readOnly: r.players > 6});
             } else {
                 console.log('room doesnt exist anymore');
-                // Notify
-                this.props.navigation.navigate('Home');
+
+                this.refs.toast.show('Cette salle n\'existe plus', 500, () => {
+                    this.props.navigation.navigate('Home')
+                });
+
             }
         });
     };
@@ -260,8 +279,11 @@ export default class GameScreen extends React.Component {
         if (this.state.me.chouette1 > 0) {
             Sails.io.post(`/room/${this.state.roomId}/player/${this.state.me.id}/action`, {
                 action: 'THROW_CUL'
-            }, () => {
+            }, (r) => {
                 // Notify
+                if (r) {
+                    this.refs.toast.show(r.combinaison + ' !');
+                }
                 let me = this.state.me;
                 me.chouette1 = 0;
                 me.chouette1 = 0;
